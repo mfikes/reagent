@@ -36,7 +36,7 @@ nice clickable links to source in modern browsers)."
   "Useful debugging macro that prints the source and value of x,
 as well as package name and line number. Returns x."
   [x]
-  (let [ns (str cljs.analyzer/*cljs-ns*)]
+  (let [ns 'tbd.ns #_(str cljs.analyzer/*cljs-ns*)]
     `(let [x# ~x]
        (println (str "dbg "
                      ~ns ":"

@@ -2,7 +2,7 @@
   (:require [cljs.test :as t :refer-macros [is deftest testing]]
             [reagent.ratom :as rv :refer-macros [reaction]]
             [reagent.debug :refer-macros [dbg println log]]
-            [reagent.interop :refer-macros [.' .!]]
+            [reagent.interop :refer-macros [dot-quote dot-bang]]
             [reagent.core :as r]))
 
 (defn running [] (rv/running))
@@ -436,15 +436,15 @@
     (is (= (rstr (ae [:div [:div "foo"]]))
            (rstr (ae [:div (ce "div" nil "foo")]))))))
 
-(def ndiv (.' js/React
+(def ndiv (dot-quote js/React
               createClass
               #js{:render
                   (fn []
                     (this-as
                      this
                      (r/create-element
-                      "div" #js{:className (.' this :props.className)}
-                      (.' this :props.children))))}))
+                      "div" #js{:className (dot-quote this :props.className)}
+                      (dot-quote this :props.children))))}))
 
 (deftest test-adapt-class
   (let [d1 (r/adapt-react-class ndiv)

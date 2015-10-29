@@ -8,7 +8,7 @@
             [reagent.impl.batching :as batch]
             [reagent.ratom :as ratom]
             [reagent.debug :as deb :refer-macros [dbg prn]]
-            [reagent.interop :refer-macros [.' .!]]))
+            [reagent.interop :refer-macros [dot-quote dot-bang]]))
 
 (def is-client util/is-client)
 
@@ -81,7 +81,7 @@ Returns the mounted component instance."
   "Turns a component into an HTML string."
   ([component]
      (binding [comp/*non-reactive* true]
-       (.' js/React renderToString (as-element component)))))
+       (dot-quote js/React renderToString (as-element component)))))
 
 ;; For backward compatibility
 (def as-component as-element)
@@ -92,7 +92,7 @@ Returns the mounted component instance."
   "Turns a component into an HTML string, without data-react-id attributes, etc."
   ([component]
      (binding [comp/*non-reactive* true]
-       (.' js/React renderToStaticMarkup (as-element component)))))
+       (dot-quote js/React renderToStaticMarkup (as-element component)))))
 
 (defn ^:export force-update-all
   "Force re-rendering of all mounted Reagent components. This is
@@ -194,7 +194,7 @@ Equivalent to (swap! (state-atom this) merge new-state)"
 (defn dom-node
   "Returns the root DOM node of a mounted component."
   [this]
-  (.' this getDOMNode))
+  (dot-quote this getDOMNode))
 
 (defn merge-props
   "Utility function that merges two maps, handling :class and :style

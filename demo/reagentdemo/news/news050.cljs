@@ -1,6 +1,6 @@
 (ns reagentdemo.news.news050
   (:require [reagent.core :as r]
-            [reagent.interop :refer-macros [.' .!]]
+            [reagent.interop :refer-macros [dot-quote dot-bang]]
             [reagent.debug :refer-macros [dbg println]]
             [reagentdemo.syntax :as s]
             [sitetools.core :as tools :refer [link]]

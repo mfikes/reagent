@@ -1,6 +1,5 @@
 (ns reagent.interop
-  (:require [clojure.string :as string :refer [join]]
-            [clojure.java.io :as io]))
+  (:require [clojure.string :as string :refer [join]]))
 
 (defn- js-call [f args]
   (let [argstr (->> (repeat (count args) "~{}")
@@ -23,7 +22,7 @@
                   (string/split #"\."))]
     [field? names]))
 
-(defmacro .'
+(defmacro dot-quote
   "Access member in a javascript object, in a Closure-safe way.
   'member' is assumed to be a field if it is a keyword or if
   the name starts with '-', otherwise the named function is
@@ -39,7 +38,7 @@
         `(aget ~object ~@names))
       (js-call (list* 'aget object names) args))))
 
-(defmacro .!
+(defmacro dot-bang
   "Set field in a javascript object, in a Closure-safe way.
   'field' should be a keyword or a symbol starting with '-'.
   'field' may contain '.', to allow access in nested objects.

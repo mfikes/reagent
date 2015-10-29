@@ -1,10 +1,10 @@
 (ns reagent.impl.util
   (:require [reagent.debug :refer-macros [dbg log warn]]
-            [reagent.interop :refer-macros [.' .!]]
+            [reagent.interop :refer-macros [dot-quote dot-bang]]
             [clojure.string :as string]))
 
 (def is-client (and (exists? js/window)
-                    (-> js/window (.' :document) nil? not)))
+                    (-> js/window (dot-quote :document) nil? not)))
 
 ;;; Props accessors
 
@@ -19,22 +19,22 @@
       (subvec v first-child))))
 
 (defn get-argv [c]
-  (.' c :props.argv))
+  (dot-quote c :props.argv))
 
 (defn get-props [c]
-  (-> (.' c :props.argv) extract-props))
+  (-> (dot-quote c :props.argv) extract-props))
 
 (defn get-children [c]
-  (-> (.' c :props.argv) extract-children))
+  (-> (dot-quote c :props.argv) extract-children))
 
 (defn reagent-component? [c]
-  (-> (.' c :props.argv) nil? not))
+  (-> (dot-quote c :props.argv) nil? not))
 
 (defn cached-react-class [c]
-  (.' c :cljsReactClass))
+  (dot-quote c :cljsReactClass))
 
 (defn cache-react-class [c constructor]
-  (.! c :cljsReactClass constructor))
+  (dot-bang c :cljsReactClass constructor))
 
 ;; Misc utilities
 
@@ -108,13 +108,13 @@
   ;; If render throws, React may get confused, and throw on
   ;; unmount as well, so try to force React to start over.
   (some-> node
-          (.! :innerHTML "")))
+          (dot-bang :innerHTML "")))
 
 (defn render-component [comp container callback]
   (let [rendered (volatile! nil)]
     (try
       (binding [*always-update* true]
-        (->> (.' js/React render (comp) container
+        (->> (dot-quote js/React render (comp) container
                  (fn []
                    (binding [*always-update* false]
                      (swap! roots assoc container [comp container])
@@ -130,7 +130,7 @@
 
 (defn unmount-component-at-node [container]
   (swap! roots dissoc container)
-  (.' js/React unmountComponentAtNode container))
+  (dot-quote js/React unmountComponentAtNode container))
 
 (defn force-update-all []
   (doseq [v (vals @roots)]
@@ -140,5 +140,5 @@
 (defn force-update [comp deep]
   (if deep
     (binding [*always-update* true]
-      (.' comp forceUpdate))
-    (.' comp forceUpdate)))
+      (dot-quote comp forceUpdate))
+    (dot-quote comp forceUpdate)))

@@ -4,7 +4,7 @@
             [reagent.impl.component :as comp]
             [reagent.impl.batching :as batch]
             [reagent.ratom :as ratom]
-            [reagent.interop :refer-macros [.' .!]]
+            [reagent.interop :refer-macros [dot-quote dot-bang]]
             [reagent.debug :refer-macros [dbg prn println log dev?
                                           warn warn-unless]]))
 
@@ -64,18 +64,18 @@
 
 (defn set-id-class [props id class]
   (let [p (if (nil? props) #js{} props)]
-    (when (and (some? id) (nil? (.' p :id)))
-      (.! p :id id))
+    (when (and (some? id) (nil? (dot-quote p :id)))
+      (dot-bang p :id id))
     (when (some? class)
-      (let [old (.' p :className)]
-        (.! p :className (if (some? old)
+      (let [old (dot-quote p :className)]
+        (dot-bang p :className (if (some? old)
                            (str class " " old)
                            class))))
     p))
 
 (defn convert-props [props id-class]
-  (let [id (.' id-class :id)
-        class (.' id-class :className)
+  (let [id (dot-quote id-class :id)
+        class (dot-quote id-class :className)
         no-id-class (and (nil? id) (nil? class))]
     (if (and no-id-class (empty? props))
       nil
@@ -88,7 +88,7 @@
 ;;; Specialization for input components
 
 (defn input-unmount [this]
-  (.! this :cljsInputValue nil))
+  (dot-bang this :cljsInputValue nil))
 
 ;; <input type="??" >
 ;; The properites 'selectionStart' and 'selectionEnd' only exist on some inputs
@@ -100,17 +100,17 @@
   (contains? these-inputs-have-selection-api input-type))
 
 (defn input-set-value [this]
-  (when-some [value (.' this :cljsInputValue)]
-             (.! this :cljsInputDirty false)
-             (let [node       (.' this getDOMNode)
-                   node-value (.' node :value)]
+  (when-some [value (dot-quote this :cljsInputValue)]
+             (dot-bang this :cljsInputDirty false)
+             (let [node       (dot-quote this getDOMNode)
+                   node-value (dot-quote node :value)]
                (when (not= value node-value)
                  (if-not (and (identical? node (.-activeElement js/document))
-                              (has-selection-api? (.' node :type))
+                              (has-selection-api? (dot-quote node :type))
                               (string? value)
                               (string? node-value))
                    ; just set the value, no need to worry about a cursor
-                   (.! node :value value)
+                   (dot-bang node :value value)
 
                    ;; Setting "value" (below) moves the cursor position to the end which 
                    ;; gives the user a jarring experience. 
@@ -130,35 +130,35 @@
                    ;; handle all the cases we could think of.  
                    ;; So this is just a warning.  The code below is simple enough, but if
                    ;; you are tempted to change it, be aware of all the scenarios you have handle. 
-                   (let [existing-offset-from-end (- (count node-value) (.' node :selectionStart))
+                   (let [existing-offset-from-end (- (count node-value) (dot-quote node :selectionStart))
                          new-cursor-offset        (- (count value) existing-offset-from-end)]
-                     (.! node :value value)
-                     (.! node :selectionStart new-cursor-offset)
-                     (.! node :selectionEnd   new-cursor-offset)))))))
+                     (dot-bang node :value value)
+                     (dot-bang node :selectionStart new-cursor-offset)
+                     (dot-bang node :selectionEnd   new-cursor-offset)))))))
 
 (defn input-handle-change [this on-change e]
   (let [res (on-change e)]
     ;; Make sure the input is re-rendered, in case on-change
     ;; wants to keep the value unchanged
-    (when-not (.' this :cljsInputDirty)
-      (.! this :cljsInputDirty true)
+    (when-not (dot-quote this :cljsInputDirty)
+      (dot-bang this :cljsInputDirty true)
       (batch/do-later #(input-set-value this)))
     res))
 
 (defn input-render-setup [this jsprops]
   ;; Don't rely on React for updating "controlled inputs", since it
   ;; doesn't play well with async rendering (misses keystrokes).
-  (if (and (.' jsprops hasOwnProperty "onChange")
-           (.' jsprops hasOwnProperty "value"))
-    (let [v (.' jsprops :value)
+  (if (and (dot-quote jsprops hasOwnProperty "onChange")
+           (dot-quote jsprops hasOwnProperty "value"))
+    (let [v (dot-quote jsprops :value)
           value (if (nil? v) "" v)
-          on-change (.' jsprops :onChange)]
-      (.! this :cljsInputValue value)
+          on-change (dot-quote jsprops :onChange)]
+      (dot-bang this :cljsInputValue value)
       (js-delete jsprops "value")
       (doto jsprops
-        (.! :defaultValue value)
-        (.! :onChange #(input-handle-change this on-change %))))
-    (.! this :cljsInputValue nil)))
+        (dot-bang :defaultValue value)
+        (dot-bang :onChange #(input-handle-change this on-change %))))
+    (dot-bang this :cljsInputValue nil)))
 
 (defn input-component? [x]
   (or (identical? x "input")
@@ -199,10 +199,10 @@
 (defn fn-to-class [f]
   (assert (ifn? f) (str "Expected a function, not " (pr-str f)))
   (warn-unless (not (and (fn? f)
-                         (some? (.' f :type))))
+                         (some? (dot-quote f :type))))
                "Using native React classes directly in Hiccup forms "
                "is not supported. Use create-element or "
-               "adapt-react-class instead: " (.' f :type)
+               "adapt-react-class instead: " (dot-quote f :type)
                (comp/comp-name))
   (let [spec (meta f)
         withrender (assoc spec :reagent-render f)
@@ -231,8 +231,8 @@
 (defn reag-element [tag v]
   (let [c (as-class tag)
         jsprops #js{:argv v}]
-    (some->> v key-from-vec (.! jsprops :key))
-    (.' js/React createElement c jsprops)))
+    (some->> v key-from-vec (dot-bang jsprops :key))
+    (dot-quote js/React createElement c jsprops)))
 
 (defn adapt-react-class [c]
   (NativeWrapper. #js{:name c
@@ -249,7 +249,7 @@
 (declare as-element)
 
 (defn native-element [parsed argv]
-  (let [comp (.' parsed :name)]
+  (let [comp (dot-quote parsed :name)]
     (let [props (nth argv 1 nil)
           hasprops (or (nil? props) (map? props))
           jsprops (convert-props (if hasprops props) parsed)
@@ -260,7 +260,7 @@
             as-element)
         (let [p (if-some [key (some-> (meta argv) get-key)]
                   (doto (if (nil? jsprops) #js{} jsprops)
-                    (.! :key key))
+                    (dot-bang :key key))
                   jsprops)]
           (make-element argv comp p first-child))))))
 
@@ -310,7 +310,7 @@
       (let [val (aget a i)]
         (when (and (vector? val)
                    (nil? (key-from-vec val)))
-          (.! o :no-key true))
+          (dot-bang o :no-key true))
         (aset a i (as-element val))))
     a))
 
@@ -325,7 +325,7 @@
             "it should be wrapped in doall"
             (comp/comp-name) ". Value:\n" (pr-str x)))
     (when (and (not comp/*non-reactive*)
-               (.' ctx :no-key))
+               (dot-quote ctx :no-key))
       (warn "Every element in a seq should have a unique "
             ":key" (comp/comp-name) ". Value: " (pr-str x)))
     res))
@@ -333,12 +333,12 @@
 (defn make-element [argv comp jsprops first-child]
   (case (- (count argv) first-child)
     ;; Optimize cases of zero or one child
-    0 (.' js/React createElement comp jsprops)
+    0 (dot-quote js/React createElement comp jsprops)
 
-    1 (.' js/React createElement comp jsprops
+    1 (dot-quote js/React createElement comp jsprops
           (as-element (nth argv first-child)))
 
-    (.apply (.' js/React :createElement) nil
+    (.apply (dot-quote js/React :createElement) nil
             (reduce-kv (fn [a k v]
                          (when (>= k first-child)
                            (.push a (as-element v)))

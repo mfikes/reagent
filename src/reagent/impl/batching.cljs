@@ -1,7 +1,7 @@
 (ns reagent.impl.batching
   (:refer-clojure :exclude [flush])
   (:require [reagent.debug :refer-macros [dbg]]
-            [reagent.interop :refer-macros [.' .!]]
+            [reagent.interop :refer-macros [dot-quote dot-bang]]
             [reagent.ratom :as ratom]
             [reagent.impl.util :refer [is-client]]
             [clojure.string :as string]))
@@ -20,15 +20,15 @@
   (if-not is-client
     fake-raf
     (let [w js/window]
-      (or (.' w :requestAnimationFrame)
-          (.' w :webkitRequestAnimationFrame)
-          (.' w :mozRequestAnimationFrame)
-          (.' w :msRequestAnimationFrame)
+      (or (dot-quote w :requestAnimationFrame)
+          (dot-quote w :webkitRequestAnimationFrame)
+          (dot-quote w :mozRequestAnimationFrame)
+          (dot-quote w :msRequestAnimationFrame)
           fake-raf))))
 
 (defn compare-mount-order [c1 c2]
-  (- (.' c1 :cljsMountOrder)
-     (.' c2 :cljsMountOrder)))
+  (- (dot-quote c1 :cljsMountOrder)
+     (dot-quote c2 :cljsMountOrder)))
 
 (defn run-queue [a]
   ;; sort components by mount order, to make sure parents
@@ -36,8 +36,8 @@
   (.sort a compare-mount-order)
   (dotimes [i (alength a)]
     (let [c (aget a i)]
-      (when (.' c :cljsIsDirty)
-        (.' c forceUpdate)))))
+      (when (dot-quote c :cljsIsDirty)
+        (dot-quote c forceUpdate)))))
 
 (defn run-funs [a]
   (dotimes [i (alength a)]
@@ -69,11 +69,11 @@
   (.run-queue render-queue))
 
 (defn queue-render [c]
-  (.! c :cljsIsDirty true)
+  (dot-bang c :cljsIsDirty true)
   (.queue-render render-queue c))
 
 (defn mark-rendered [c]
-  (.! c :cljsIsDirty false))
+  (dot-bang c :cljsIsDirty false))
 
 (defn do-after-flush [f]
   (.add-after-render render-queue f))
@@ -85,17 +85,17 @@
 ;; Render helper
 
 (defn is-reagent-component [c]
-  (some-> c (.' :props) (.' :argv)))
+  (some-> c (dot-quote :props) (dot-quote :argv)))
 
 (defn run-reactively [c run]
   (assert (is-reagent-component c))
   (mark-rendered c)
-  (let [rat (.' c :cljsRatom)]
+  (let [rat (dot-quote c :cljsRatom)]
     (if (nil? rat)
       (let [res (ratom/capture-derefed run c)
             derefed (ratom/captured c)]
         (when (not (nil? derefed))
-          (.! c :cljsRatom
+          (dot-bang c :cljsRatom
               (ratom/make-reaction run
                                    :auto-run #(queue-render c)
                                    :derefed derefed)))
@@ -103,7 +103,7 @@
       (ratom/run rat))))
 
 (defn dispose [c]
-  (some-> (.' c :cljsRatom)
+  (some-> (dot-quote c :cljsRatom)
           ratom/dispose!)
   (mark-rendered c))
 

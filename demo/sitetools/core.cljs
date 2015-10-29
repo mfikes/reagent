@@ -4,7 +4,7 @@
             [goog.history.EventType :as hevt]
             [reagent.core :as r]
             [reagent.debug :refer-macros [dbg log dev?]]
-            [reagent.interop :as i :refer-macros [.' .!]])
+            [reagent.interop :as i :refer-macros [dot-quote dot-bang]])
   (:import [goog History]
            [goog.history Html5History]
            [goog.net Jsonp]))
@@ -93,7 +93,7 @@
 
 (defn use-html5-history []
   (when r/is-client
-    (let [proto (.' js/window :location.protocol)]
+    (let [proto (dot-quote js/window :location.protocol)]
       (and (:allow-html5-history @config)
            (.isSupported Html5History)
            (#{"http:" "https:"} proto)))))
@@ -143,7 +143,7 @@
   (when (and (not (:base-path @config))
              (use-html5-history))
     (swap! config assoc :base-path
-           (base-path (.' js/window -location.pathname) p)))
+           (base-path (dot-quote js/window -location.pathname) p)))
   (reset! page p))
 
 (defn prefix [href]
@@ -198,26 +198,26 @@
   (let [fs (js/require "fs")
         path (js/require "path")
         items (as-> f _
-                    (.' path dirname _)
-                    (.' path normalize _)
+                    (dot-quote path dirname _)
+                    (dot-quote path normalize _)
                     (string/split _ #"/"))
         parts (reductions #(str %1 "/" %2) items)]
     (doseq [d parts]
-      (when-not (.' fs existsSync d)
-        (.' fs mkdirSync d)))))
+      (when-not (dot-quote fs existsSync d)
+        (dot-quote fs mkdirSync d)))))
 
 (defn write-file [f content]
   (let [fs (js/require "fs")]
     (mkdirs f)
-    (.' fs writeFileSync f content)))
+    (dot-quote fs writeFileSync f content)))
 
 (defn read-file [f]
   (let [fs (js/require "fs")]
-    (.' fs readFileSync f)))
+    (dot-quote fs readFileSync f)))
 
 (defn path-join [& paths]
   (let [path (js/require "path")]
-    (apply (.' path :join) paths)))
+    (apply (dot-quote path :join) paths)))
 
 (defn read-css []
   (clojure.string/join "\n"
@@ -234,7 +234,7 @@
   (log "Generating site")
   (swap! config merge (js->clj opts :keywordize-keys true))
   (let [dir (:site-dir @config)
-        timestamp (str "?" (.' js/Date now))]
+        timestamp (str "?" (dot-quote js/Date now))]
     (doseq [f (keys (:page-map @config))]
       (write-file (path-join dir f)
                   (gen-page f timestamp)))
@@ -254,5 +254,5 @@
         (setup-history page-name)
         (set! (.-title js/document) (get-title)))
       (r/render-component (body)
-                          (.' js/document getElementById
+                          (dot-quote js/document getElementById
                               (:main-div @config))))))

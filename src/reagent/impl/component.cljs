@@ -2,7 +2,7 @@
   (:require [reagent.impl.util :as util]
             [reagent.impl.batching :as batch]
             [reagent.ratom :as ratom]
-            [reagent.interop :refer-macros [.' .!]]
+            [reagent.interop :refer-macros [dot-quote dot-bang]]
             [reagent.debug :refer-macros [dbg prn dev? warn]]))
 
 (declare ^:dynamic *current-component*)
@@ -12,10 +12,10 @@
 ;;; State
 
 (defn state-atom [this]
-  (let [sa (.' this :cljsState)]
+  (let [sa (dot-quote this :cljsState)]
     (if-not (nil? sa)
       sa
-      (.! this :cljsState (ratom/atom nil)))))
+      (dot-bang this :cljsState (ratom/atom nil)))))
 
 ;; ugly circular dependency
 (defn as-element [x]
@@ -25,15 +25,15 @@
 
 (defn reagent-class? [c]
   (and (fn? c)
-       (some? (.' c :cljsReactClass))))
+       (some? (dot-quote c :cljsReactClass))))
 
 (defn do-render-sub [c]
-  (let [f (.' c :cljsRender)
+  (let [f (dot-quote c :cljsRender)
         _ (assert (ifn? f))
-        p (.' c :props)
-        res (if (nil? (.' c :reagentRender))
+        p (dot-quote c :props)
+        res (if (nil? (dot-quote c :reagentRender))
               (f c)
-              (let [argv (.' p :argv)
+              (let [argv (dot-quote p :argv)
                     n (count argv)]
                 (case n
                   1 (f)
@@ -49,7 +49,7 @@
                   (fn [& args]
                     (as-element (apply vector res args)))
                   res)]
-          (.! c :cljsRender f)
+          (dot-bang c :cljsRender f)
           (recur c))
         res))))
 
@@ -93,7 +93,7 @@
     :componentWillReceiveProps
     (fn [props]
       (this-as c
-               (f c (.' props :argv))))
+               (f c (dot-quote props :argv))))
 
     :shouldComponentUpdate
     (fn [nextprops nextstate]
@@ -101,8 +101,8 @@
           (this-as c
                    ;; Don't care about nextstate here, we use forceUpdate
                    ;; when only when state has changed anyway.
-                   (let [old-argv (.' c :props.argv)
-                         new-argv (.' nextprops :argv)]
+                   (let [old-argv (dot-quote c :props.argv)
+                         new-argv (dot-quote nextprops :argv)]
                      (if (nil? f)
                        (or (nil? old-argv)
                            (nil? new-argv)
@@ -112,17 +112,17 @@
     :componentWillUpdate
     (fn [nextprops]
       (this-as c
-               (f c (.' nextprops :argv))))
+               (f c (dot-quote nextprops :argv))))
 
     :componentDidUpdate
     (fn [oldprops]
       (this-as c
-               (f c (.' oldprops :argv))))
+               (f c (dot-quote oldprops :argv))))
 
     :componentWillMount
     (fn []
       (this-as c
-               (.! c :cljsMountOrder (batch/next-mount-count))
+               (dot-bang c :cljsMountOrder (batch/next-mount-count))
                (when-not (nil? f)
                  (f c))))
 
@@ -146,7 +146,7 @@
 (defn dont-bind [f]
   (if (fn? f)
     (doto f
-      (.! :__reactDontBind true))
+      (dot-bang :__reactDontBind true))
     f))
 
 (defn get-wrapper [key f name]
@@ -182,8 +182,8 @@
 
 (defn fun-name [f]
   (or (and (fn? f)
-           (or (.' f :displayName)
-               (.' f :name)))
+           (or (dot-quote f :displayName)
+               (dot-quote f :name)))
       (and (implements? INamed f)
            (name f))
       (let [m (meta f)]
@@ -230,10 +230,10 @@
   [body]
   (assert (map? body))
   (let [spec (cljsify body)
-        res (.' js/React createClass spec)
+        res (dot-quote js/React createClass spec)
         f (fn [& args]
             (warn "Calling the result of create-class as a function is "
-                  "deprecated in " (.' res :displayName) ". Use a vector "
+                  "deprecated in " (dot-quote res :displayName) ". Use a vector "
                   "instead.")
             (as-element (apply vector res args)))]
     (util/cache-react-class f res)
@@ -242,14 +242,14 @@
 
 (defn component-path [c]
   (let [elem (some-> (or (some-> c
-                                 (.' :_reactInternalInstance))
+                                 (dot-quote :_reactInternalInstance))
                           c)
-                     (.' :_currentElement))
+                     (dot-quote :_currentElement))
         name (some-> elem
-                     (.' :type)
-                     (.' :displayName))
+                     (dot-quote :type)
+                     (dot-quote :displayName))
         path (some-> elem
-                     (.' :_owner)
+                     (dot-quote :_owner)
                      component-path
                      (str " > "))
         res (str path name)]
@@ -259,7 +259,7 @@
   (if (dev?)
     (let [c *current-component*
           n (or (component-path c)
-                (some-> c (.' cljsName)))]
+                (some-> c (dot-quote cljsName)))]
       (if-not (empty? n)
         (str " (in " n ")")
         ""))
@@ -272,14 +272,14 @@
 (def elem-counter 0)
 
 (defn reactify-component [comp]
-  (.' js/React createClass
+  (dot-quote js/React createClass
       #js{:displayName "react-wrapper"
           :render
           (fn []
             (this-as this
                      (as-element
                       [comp
-                       (-> (.' this :props)
+                       (-> (dot-quote this :props)
                            shallow-obj-to-map
                            ;; ensure re-render, might get mutable js data
                            (assoc :-elem-count
